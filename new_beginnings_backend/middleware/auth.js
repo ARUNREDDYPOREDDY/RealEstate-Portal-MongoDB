@@ -26,7 +26,7 @@ const protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const { rows } = await pool.query(
-      "SELECT id, first_name, last_name, email, phone, city, role, is_active FROM users WHERE id = ?",
+      "SELECT id, first_name, last_name, email, phone, city, role, is_active FROM users WHERE id = $1",
       [decoded.id]
     );
 
@@ -60,7 +60,7 @@ const optionalAuth = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const { rows } = await pool.query(
-      "SELECT id, first_name, last_name, email, phone, city, role, is_active FROM users WHERE id = ?",
+      "SELECT id, first_name, last_name, email, phone, city, role, is_active FROM users WHERE id = $1",
       [decoded.id]
     );
     if (rows.length && rows[0].is_active) req.user = rows[0];
