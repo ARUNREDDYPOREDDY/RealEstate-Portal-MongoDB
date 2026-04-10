@@ -7,6 +7,15 @@ const seed = async () => {
   console.log("🌱 Starting PostgreSQL seed...");
 
   try {
+    const fs = require('fs');
+    const path = require('path');
+    const schemaPath = path.join(__dirname, 'schema.sql');
+    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+    
+    console.log("🔨 Creating tables from schema.sql...");
+    await pool.query(schemaSql);
+    console.log("✅ Tables created or already exist!");
+    
     // ── USERS ─────────────────────────────────────
     const userResult = await pool.query("SELECT COUNT(*) FROM users");
     const userCount = parseInt(userResult.rows[0].count);
