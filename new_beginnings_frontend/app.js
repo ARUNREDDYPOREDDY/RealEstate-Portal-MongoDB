@@ -201,10 +201,10 @@ async function doRegister() {
   const confirm = document.getElementById('regPassConfirm').value;
   const agreed = document.getElementById('agreeTerms').checked;
 
-  if (!first || !last || !email || !pass) { showToast('Please fill all required fields.', 'error'); return; }
-  if (pass !== confirm) { showToast('Passwords do not match.', 'error'); return; }
-  if (pass.length < 8) { showToast('Password must be at least 8 characters.', 'error'); return; }
-  if (!agreed) { showToast('Please agree to Terms & Conditions.', 'error'); return; }
+  if (!first || !last || !email || !pass) { alert('🛑 ERROR: Please fill all required fields (First Name, Last Name, Email, Password).'); return; }
+  if (pass !== confirm) { alert('🛑 ERROR: Your Passwords do not match exactly!'); return; }
+  if (pass.length < 8) { alert('🛑 ERROR: Password must be at least 8 characters long!'); return; }
+  if (!agreed) { alert('🛑 ERROR: You MUST check the "I agree to the Terms & Conditions" box at the bottom!'); return; }
 
   try {
     const res = await fetch(`${API_URL}/auth/register`, {
@@ -212,7 +212,7 @@ async function doRegister() {
       body: JSON.stringify({ first_name: first, last_name: last, email, phone, password: pass })
     });
     const data = await res.json();
-    if (!data.success) { showToast(data.message, 'error'); return; }
+    if (!data.success) { alert(`🛑 BACKEND REJECTED: ${data.message} (Are you using an email that's already registered?)`); return; }
 
     const u = {
       id: data.user.id, email: data.user.email, firstName: data.user.first_name,
@@ -225,7 +225,7 @@ async function doRegister() {
     closeModal('registerModal');
     showToast(`Welcome to New Beginnings, ${u.firstName}! 🏠`, 'success');
   } catch (err) {
-    showToast('Failed to register. Check connection.', 'error');
+    alert(`🛑 CRITICAL NETWORK ERROR: Could not connect to API. Error details: ${err.message}`);
   }
 }
 
