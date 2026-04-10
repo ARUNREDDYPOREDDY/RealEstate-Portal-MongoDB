@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
 -- ── PROPERTIES ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS properties (
@@ -48,11 +48,11 @@ CREATE TABLE IF NOT EXISTS properties (
   FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_properties_type ON properties(type);
-CREATE INDEX idx_properties_city ON properties(city);
-CREATE INDEX idx_properties_price ON properties(price);
-CREATE INDEX idx_properties_status ON properties(status);
-CREATE INDEX idx_properties_badge ON properties(badge);
+CREATE INDEX IF NOT EXISTS idx_properties_type ON properties(type);
+CREATE INDEX IF NOT EXISTS idx_properties_city ON properties(city);
+CREATE INDEX IF NOT EXISTS idx_properties_price ON properties(price);
+CREATE INDEX IF NOT EXISTS idx_properties_status ON properties(status);
+CREATE INDEX IF NOT EXISTS idx_properties_badge ON properties(badge);
 
 -- ── AMENITIES ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS amenities (
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS amenities (
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_amenities_property ON amenities(property_id);
+CREATE INDEX IF NOT EXISTS idx_amenities_property ON amenities(property_id);
 
 -- ── PROPERTY IMAGES ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS property_images (
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS property_images (
   FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_images_property ON property_images(property_id);
+CREATE INDEX IF NOT EXISTS idx_images_property ON property_images(property_id);
 
 -- ── FAVORITES ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS favorites (
@@ -102,9 +102,9 @@ CREATE TABLE IF NOT EXISTS enquiries (
   FOREIGN KEY (user_id)     REFERENCES users(id)      ON DELETE SET NULL
 );
 
-CREATE INDEX idx_enquiries_property ON enquiries(property_id);
-CREATE INDEX idx_enquiries_user ON enquiries(user_id);
-CREATE INDEX idx_enquiries_status ON enquiries(status);
+CREATE INDEX IF NOT EXISTS idx_enquiries_property ON enquiries(property_id);
+CREATE INDEX IF NOT EXISTS idx_enquiries_user ON enquiries(user_id);
+CREATE INDEX IF NOT EXISTS idx_enquiries_status ON enquiries(status);
 
 -- ── REVIEWS ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS reviews (
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   FOREIGN KEY (user_id)     REFERENCES users(id)      ON DELETE SET NULL
 );
 
-CREATE INDEX idx_reviews_property ON reviews(property_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_property ON reviews(property_id);
 
 -- ── VISITS ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS visits (

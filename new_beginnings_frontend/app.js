@@ -6,7 +6,7 @@
 // ==============================
 // DATA STORE
 // ==============================
-const API_URL = "https://new-beginnings-portal-1.onrender.com/api";
+const API_URL = "https://new-beginnings-api.onrender.com/api";
 
 const DB = {
   users: [],
