@@ -6,32 +6,14 @@
 // ==============================
 // DATA STORE
 // ==============================
+const API_URL = "https://new-beginnings-portal-1.onrender.com/api";
+
 const DB = {
-  users: [
-    { id: 1, email: 'user@demo.com', password: 'demo123', firstName: 'Arjun', lastName: 'Sharma', phone: '+91 98765 43210', city: 'Hyderabad', role: 'user' },
-    { id: 2, email: 'admin@demo.com', password: 'admin123', firstName: 'Admin', lastName: 'User', phone: '+91 98765 00000', city: 'Hyderabad', role: 'admin' }
-  ],
-  properties: [
-    { id: 1, title: 'Luxury 3BHK in Banjara Hills', type: 'Apartment', price: 8500000, area: 1800, beds: 3, baths: 3, city: 'Hyderabad', locality: 'Banjara Hills', address: 'Road No. 12, Banjara Hills, Hyderabad', description: 'A stunning luxury apartment with panoramic city views. Premium fittings, modular kitchen, and world-class amenities make this a dream home.', amenities: ['Parking', 'Swimming Pool', 'Gym', 'Security', 'Power Backup', 'Lift'], owner: 'Rajesh Reddy', ownerPhone: '+91 98765 12345', rating: 4.8, reviews: 24, badge: 'featured', emoji: '🏢', lat: 17.4156, lng: 78.4347 },
-    { id: 2, title: 'Modern Villa in Jubilee Hills', type: 'Villa', price: 25000000, area: 4200, beds: 5, baths: 6, city: 'Hyderabad', locality: 'Jubilee Hills', address: 'Plot 23, Road 36, Jubilee Hills', description: 'An architectural masterpiece spanning 4200 sq.ft. Sprawling lawns, private swimming pool, and luxury interiors define this property.', amenities: ['Parking', 'Swimming Pool', 'Gym', 'Security', 'Power Backup', 'Lift', 'Garden', 'Club House'], owner: 'Priya Nair', ownerPhone: '+91 98765 23456', rating: 4.9, reviews: 12, badge: 'featured', emoji: '🏡', lat: 17.4229, lng: 78.4062 },
-    { id: 3, title: 'Affordable 2BHK in Kukatpally', type: 'Apartment', price: 4200000, area: 1100, beds: 2, baths: 2, city: 'Hyderabad', locality: 'Kukatpally', address: 'KPHB Phase 6, Kukatpally', description: 'Well-maintained apartment in a prime residential area. Close to HITEC City, ideal for IT professionals.', amenities: ['Parking', 'Security', 'Power Backup', 'Lift'], owner: 'Mohammed Farhan', ownerPhone: '+91 98765 34567', rating: 4.2, reviews: 31, badge: 'new', emoji: '🏠', lat: 17.4947, lng: 78.3996 },
-    { id: 4, title: 'Commercial Space in Madhapur', type: 'Commercial', price: 15000000, area: 3500, beds: 0, baths: 4, city: 'Hyderabad', locality: 'Madhapur', address: 'Cyber Towers, Madhapur, Hyderabad', description: 'Premium Grade-A commercial office space in the heart of HITEC City. Excellent connectivity and modern infrastructure.', amenities: ['Parking', 'Security', 'Power Backup', 'Lift', 'Club House'], owner: 'Suresh Kumar', ownerPhone: '+91 98765 45678', rating: 4.5, reviews: 8, badge: 'hot', emoji: '🏗️', lat: 17.4486, lng: 78.3908 },
-    { id: 5, title: 'Independent House in Kompally', type: 'Independent House', price: 6800000, area: 2200, beds: 4, baths: 3, city: 'Hyderabad', locality: 'Kompally', address: 'Suchitra Junction, Kompally', description: 'Spacious independent house with a beautiful garden. Perfect for families looking for space and privacy.', amenities: ['Parking', 'Garden', 'Security'], owner: 'Lakshmi Devi', ownerPhone: '+91 98765 56789', rating: 4.3, reviews: 15, badge: 'new', emoji: '🏘️', lat: 17.5463, lng: 78.4884 },
-    { id: 6, title: 'Plot in Shamshabad', type: 'Land / Plot', price: 3500000, area: 2000, beds: 0, baths: 0, city: 'Hyderabad', locality: 'Shamshabad', address: 'Near RGIA, Shamshabad', description: 'DTCP approved layout plot with clear titles. Excellent investment opportunity near international airport.', amenities: [], owner: 'Ravi Teja', ownerPhone: '+91 98765 67890', rating: 4.0, reviews: 6, badge: 'featured', emoji: '🌿', lat: 17.2403, lng: 78.4294 },
-    { id: 7, title: '1BHK Studio in Gachibowli', type: 'Apartment', price: 2800000, area: 650, beds: 1, baths: 1, city: 'Hyderabad', locality: 'Gachibowli', address: 'DLF Cyber City, Gachibowli', description: 'Compact studio apartment ideal for working professionals. Fully furnished with modern amenities.', amenities: ['Parking', 'Gym', 'Security', 'Power Backup', 'Lift', 'Swimming Pool'], owner: 'Ananya Singh', ownerPhone: '+91 98765 78901', rating: 4.6, reviews: 42, badge: 'hot', emoji: '🏢', lat: 17.4400, lng: 78.3489 },
-    { id: 8, title: 'Luxury Penthouse in Hitech City', type: 'Apartment', price: 35000000, area: 5500, beds: 5, baths: 6, city: 'Hyderabad', locality: 'HITEC City', address: 'Salarpuria Sattva, HITEC City', description: 'Sky-high penthouse with 360° city views. Private terrace, jacuzzi, home theatre and sky lounge.', amenities: ['Parking', 'Swimming Pool', 'Gym', 'Security', 'Power Backup', 'Lift', 'Garden', 'Club House'], owner: 'Vikram Malhotra', ownerPhone: '+91 98765 89012', rating: 5.0, reviews: 4, badge: 'featured', emoji: '🌆', lat: 17.4475, lng: 78.3762 },
-    { id: 9, title: 'Villa in Gandipet', type: 'Villa', price: 18000000, area: 3800, beds: 4, baths: 5, city: 'Hyderabad', locality: 'Gandipet', address: 'Osman Sagar Road, Gandipet', description: 'Lakeside villa with serene Osman Sagar views. Private boat dock, organic farm, and infinity pool.', amenities: ['Parking', 'Swimming Pool', 'Garden', 'Security'], owner: 'Harsha Varma', ownerPhone: '+91 98765 90123', rating: 4.7, reviews: 9, badge: 'featured', emoji: '🏡', lat: 17.3942, lng: 78.2952 },
-    { id: 10, title: '3BHK in Miyapur', type: 'Apartment', price: 5200000, area: 1450, beds: 3, baths: 2, city: 'Hyderabad', locality: 'Miyapur', address: 'Metro Station Road, Miyapur', description: 'Well-located apartment near Miyapur Metro Station. Modern amenities and excellent connectivity.', amenities: ['Parking', 'Security', 'Power Backup', 'Lift'], owner: 'Srinivas Rao', ownerPhone: '+91 98765 01234', rating: 4.1, reviews: 18, badge: 'new', emoji: '🏠', lat: 17.4953, lng: 78.3488 },
-    { id: 11, title: 'Commercial Plot in Uppal', type: 'Land / Plot', price: 7500000, area: 3000, beds: 0, baths: 0, city: 'Hyderabad', locality: 'Uppal', address: 'Uppal X Roads, Hyderabad', description: 'Prime commercial plot on main road with high visibility. Suitable for showroom, hospital or retail outlet.', amenities: [], owner: 'Praveen Kumar', ownerPhone: '+91 98765 11111', rating: 4.3, reviews: 5, badge: 'hot', emoji: '🌿', lat: 17.4057, lng: 78.5590 },
-    { id: 12, title: 'Heritage Bungalow in Secunderabad', type: 'Independent House', price: 12000000, area: 3200, beds: 5, baths: 4, city: 'Hyderabad', locality: 'Secunderabad', address: 'Trimulgherry, Secunderabad', description: 'Rare 80-year-old heritage bungalow with colonial architecture. Restored with modern amenities while preserving original charm.', amenities: ['Parking', 'Garden', 'Security'], owner: 'Col. Anand Krishnan', ownerPhone: '+91 98765 22222', rating: 4.8, reviews: 7, badge: 'featured', emoji: '🏛️', lat: 17.4399, lng: 78.4983 }
-  ],
+  users: [],
+  properties: [],
   favorites: [],
   enquiries: [],
-  reviews: [
-    { id: 1, name: 'Siddharth Reddy', role: 'Home Buyer', rating: 5, text: 'New Beginnings made our house-hunting journey so seamless! The filters, the map view, and the EMI calculator helped us make a confident decision. Found our dream home in Banjara Hills.' },
-    { id: 2, name: 'Meena Krishnan', role: 'Property Seller', rating: 5, text: 'As a seller, the platform gave my property incredible visibility. Within 2 weeks of listing, I had 12 enquiries. The admin panel is very professional and intuitive.' },
-    { id: 3, name: 'Rahul Agarwal', role: 'Real Estate Investor', rating: 4, text: 'The comparison feature is a game-changer. I compared 3 properties side by side and made my investment decision confidently. Highly recommend for anyone serious about real estate.' }
-  ],
+  reviews: [],
   compareList: [null, null, null],
   currentRating: 0,
   currentProperty: null,
@@ -49,7 +31,25 @@ const PAGE_SIZE = 8;
 // ==============================
 // INIT
 // ==============================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch(`${API_URL}/properties?per_page=100`);
+    const data = await res.json();
+    if (data.success) {
+      DB.properties = data.properties.map(p => ({
+        id: p.id, title: p.title, type: p.type, price: parseInt(p.price), area: parseFloat(p.area),
+        beds: p.beds, baths: p.baths, city: p.city, locality: p.locality, address: p.address,
+        description: p.description, amenities: p.amenities || [], owner: p.owner_name,
+        ownerPhone: p.owner_phone, rating: parseFloat(p.rating), reviews: p.review_count,
+        badge: p.badge, emoji: p.emoji, lat: parseFloat(p.lat), lng: parseFloat(p.lng),
+        images: p.images || []
+      }));
+      filteredProps = [...DB.properties];
+    }
+  } catch (err) {
+    console.error("Failed to load properties list", err);
+  }
+
   initParticles();
   initMapPins();
   renderFeatured();
@@ -64,7 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Restore session
   const saved = sessionStorage.getItem('nbUser');
-  if (saved) {
+  const token = sessionStorage.getItem('nbToken');
+  if (saved && token) {
     currentUser = JSON.parse(saved);
     onLogin();
   }
@@ -157,17 +158,32 @@ function initMapPins() {
 // ==============================
 // AUTH
 // ==============================
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPassword').value;
   if (!email || !pass) { showToast('Please fill in all fields.', 'error'); return; }
-  const user = DB.users.find(u => u.email === email && u.password === pass);
-  if (!user) { showToast('Invalid email or password.', 'error'); return; }
-  currentUser = user;
-  sessionStorage.setItem('nbUser', JSON.stringify(user));
-  onLogin();
-  closeModal('loginModal');
-  showToast(`Welcome back, ${user.firstName}! 👋`, 'success');
+  
+  try {
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await res.json();
+    if (!data.success) { showToast(data.message, 'error'); return; }
+    
+    const u = {
+      id: data.user.id, email: data.user.email, firstName: data.user.first_name,
+      lastName: data.user.last_name, phone: data.user.phone, city: data.user.city, role: data.user.role
+    };
+    currentUser = u;
+    sessionStorage.setItem('nbUser', JSON.stringify(u));
+    sessionStorage.setItem('nbToken', data.token);
+    onLogin();
+    closeModal('loginModal');
+    showToast(`Welcome back, ${u.firstName}! 👋`, 'success');
+  } catch (err) {
+    showToast('Failed to login. Check connection.', 'error');
+  }
 }
 
 function quickLogin(email, pass, role) {
@@ -176,7 +192,7 @@ function quickLogin(email, pass, role) {
   doLogin();
 }
 
-function doRegister() {
+async function doRegister() {
   const first = document.getElementById('regFirst').value.trim();
   const last = document.getElementById('regLast').value.trim();
   const email = document.getElementById('regEmail').value.trim();
@@ -189,15 +205,28 @@ function doRegister() {
   if (pass !== confirm) { showToast('Passwords do not match.', 'error'); return; }
   if (pass.length < 8) { showToast('Password must be at least 8 characters.', 'error'); return; }
   if (!agreed) { showToast('Please agree to Terms & Conditions.', 'error'); return; }
-  if (DB.users.find(u => u.email === email)) { showToast('Email already registered.', 'error'); return; }
 
-  const newUser = { id: DB.users.length+1, email, password: pass, firstName: first, lastName: last, phone, city: '', role: 'user' };
-  DB.users.push(newUser);
-  currentUser = newUser;
-  sessionStorage.setItem('nbUser', JSON.stringify(newUser));
-  onLogin();
-  closeModal('registerModal');
-  showToast(`Welcome to New Beginnings, ${first}! 🏠`, 'success');
+  try {
+    const res = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ first_name: first, last_name: last, email, phone, password: pass })
+    });
+    const data = await res.json();
+    if (!data.success) { showToast(data.message, 'error'); return; }
+
+    const u = {
+      id: data.user.id, email: data.user.email, firstName: data.user.first_name,
+      lastName: data.user.last_name, phone: data.user.phone, city: data.user.city, role: data.user.role
+    };
+    currentUser = u;
+    sessionStorage.setItem('nbUser', JSON.stringify(u));
+    sessionStorage.setItem('nbToken', data.token);
+    onLogin();
+    closeModal('registerModal');
+    showToast(`Welcome to New Beginnings, ${u.firstName}! 🏠`, 'success');
+  } catch (err) {
+    showToast('Failed to register. Check connection.', 'error');
+  }
 }
 
 function onLogin() {
@@ -213,6 +242,7 @@ function onLogin() {
 function logout() {
   currentUser = null;
   sessionStorage.removeItem('nbUser');
+  sessionStorage.removeItem('nbToken');
   document.getElementById('authButtons').style.display = 'flex';
   document.getElementById('userMenu').style.display = 'none';
   document.getElementById('adminNavItem').style.display = 'none';
@@ -754,44 +784,74 @@ function previewImages(event) {
   });
 }
 
-function submitProperty(e) {
+async function submitProperty(e) {
   e.preventDefault();
   if (!currentUser) { showToast('Please login to list a property.', 'error'); return; }
-  const title = document.getElementById('propTitle').value;
+  const token = sessionStorage.getItem('nbToken');
+  if (!token) { showToast('Session expired. Please login again.', 'error'); return; }
+  
+  const fd = new FormData();
+  fd.append("title", document.getElementById('propTitle').value);
+  fd.append("type", document.getElementById('propType').value);
+  fd.append("price", document.getElementById('propPrice').value);
+  fd.append("area", document.getElementById('propArea').value);
+  fd.append("beds", document.getElementById('propBeds').value || 0);
+  fd.append("baths", document.getElementById('propBaths').value || 1);
+  fd.append("city", document.getElementById('propCity').value);
+  fd.append("locality", document.getElementById('propLocality').value || "");
+  fd.append("address", document.getElementById('propAddress').value || "");
+  fd.append("description", document.getElementById('propDesc').value || "");
+  fd.append("owner_name", `${currentUser.firstName} ${currentUser.lastName}`);
+  fd.append("owner_phone", document.getElementById('ownerPhone').value || currentUser.phone || "");
+  
   const type = document.getElementById('propType').value;
-  const price = parseInt(document.getElementById('propPrice').value);
-  const area = parseInt(document.getElementById('propArea').value);
-  const beds = parseInt(document.getElementById('propBeds').value) || 0;
-  const city = document.getElementById('propCity').value;
-  const locality = document.getElementById('propLocality').value;
-
   const emojis = { 'Apartment':'🏢', 'Villa':'🏡', 'Independent House':'🏠', 'Land / Plot':'🌿', 'Commercial':'🏗️' };
+  fd.append("emoji", emojis[type] || '🏠');
+  fd.append("badge", "new");
+  
   const amenities = [...document.querySelectorAll('#amenitiesGrid input:checked')].map(c => c.value);
+  amenities.forEach(a => fd.append("amenities[]", a)); 
+  
+  const files = document.getElementById('propImages')?.files;
+  if(files) {
+    for(let i=0; i<files.length; i++) {
+        fd.append("images", files[i]);
+    }
+  }
 
-  const newId = Date.now();
-  const newProp = {
-    id: newId, title, type, price, area, beds,
-    baths: parseInt(document.getElementById('propBaths').value) || 1,
-    city, locality, description: document.getElementById('propDesc').value,
-    amenities, owner: `${currentUser.firstName} ${currentUser.lastName}`,
-    ownerPhone: document.getElementById('ownerPhone').value || currentUser.phone,
-    rating: 0, reviews: 0, badge: 'new',
-    emoji: emojis[type] || '🏠',
-    address: document.getElementById('propAddress').value,
-    lat: 17.4 + Math.random()*0.2, lng: 78.3 + Math.random()*0.3,
-    addedAt: Date.now()
-  };
-
-  DB.properties.unshift(newProp);
-  DB.lastAddedId = newId;
-
-  // Reset form fields
-  e.target.reset();
-  const previews = document.getElementById('imagePreviews');
-  if (previews) previews.innerHTML = '';
-
-  // Navigate to listings with success banner
-  showListingsWithNewPropertyBanner(title);
+  try {
+    showToast("Submitting property...", "success");
+    const res = await fetch(`${API_URL}/properties`, {
+      method: "POST", headers: { "Authorization": `Bearer ${token}` },
+      body: fd
+    });
+    const data = await res.json();
+    if (!data.success) { showToast(data.message, "error"); return; }
+    
+    // Refresh properties
+    const pRes = await fetch(`${API_URL}/properties?per_page=100`);
+    const pData = await pRes.json();
+    if(pData.success) {
+      DB.properties = pData.properties.map(p => ({
+        id: p.id, title: p.title, type: p.type, price: parseInt(p.price), area: parseFloat(p.area),
+        beds: p.beds, baths: p.baths, city: p.city, locality: p.locality, address: p.address,
+        description: p.description, amenities: p.amenities || [], owner: p.owner_name,
+        ownerPhone: p.owner_phone, rating: parseFloat(p.rating), reviews: p.review_count,
+        badge: p.badge, emoji: p.emoji, lat: parseFloat(p.lat), lng: parseFloat(p.lng),
+        images: p.images || []
+      }));
+      filteredProps = [...DB.properties];
+    }
+    
+    DB.lastAddedId = data.property_id;
+    e.target.reset();
+    const previews = document.getElementById('imagePreviews');
+    if (previews) previews.innerHTML = '';
+    showListingsWithNewPropertyBanner(document.getElementById('propTitle').value);
+  } catch (err) {
+    console.error(err);
+    showToast("Error submitting property.", "error");
+  }
 }
 
 // ==============================
@@ -1374,51 +1434,65 @@ function prefillSellForm() {
   if (phoneEl && !phoneEl.value) phoneEl.value = currentUser.phone || '';
 }
 
-function submitSellProperty(e) {
+async function submitSellProperty(e) {
   e.preventDefault();
-  if (!currentUser) {
-    showToast('Please login to list a property.', 'error');
-    showModal('loginModal');
-    return;
-  }
+  if (!currentUser) { showToast('Please login to list a property.', 'error'); showModal('loginModal'); return; }
+  const token = sessionStorage.getItem('nbToken');
+  if (!token) { showToast('Session expired.', 'error'); return; }
 
-  const title = document.getElementById('sellTitle').value;
+  const fd = new FormData();
+  fd.append("title", document.getElementById('sellTitle').value);
+  fd.append("type", document.getElementById('sellType').value);
+  fd.append("price", document.getElementById('sellPrice').value);
+  fd.append("area", document.getElementById('sellArea').value);
+  fd.append("beds", document.getElementById('sellBeds').value || 0);
+  fd.append("baths", document.getElementById('sellBaths').value || 1);
+  fd.append("city", document.getElementById('sellCity').value);
+  fd.append("locality", document.getElementById('sellLocality').value || "");
+  fd.append("address", document.getElementById('sellAddress').value || "");
+  fd.append("description", document.getElementById('sellDesc').value || "");
+  fd.append("owner_name", `${currentUser.firstName} ${currentUser.lastName}`);
+  fd.append("owner_phone", document.getElementById('sellOwnerPhone').value || currentUser.phone || "");
+  
   const type = document.getElementById('sellType').value;
-  const price = parseInt(document.getElementById('sellPrice').value);
-  const area = parseInt(document.getElementById('sellArea').value);
-  const beds = parseInt(document.getElementById('sellBeds').value) || 0;
-  const city = document.getElementById('sellCity').value;
-  const locality = document.getElementById('sellLocality').value;
-
-  const emojis = { 'Apartment': '🏢', 'Villa': '🏡', 'Independent House': '🏠', 'Land / Plot': '🌿', 'Commercial': '🏗️' };
+  const emojis = { 'Apartment':'🏢', 'Villa':'🏡', 'Independent House':'🏠', 'Land / Plot':'🌿', 'Commercial':'🏗️' };
+  fd.append("emoji", emojis[type] || '🏠');
+  fd.append("badge", "new");
+  
   const amenities = [...document.querySelectorAll('#sellAmenitiesGrid input:checked')].map(c => c.value);
+  amenities.forEach(a => fd.append("amenities[]", a)); 
 
-  const newId = Date.now();
-  const newProp = {
-    id: newId,
-    title, type, price, area, beds,
-    baths: parseInt(document.getElementById('sellBaths').value) || 1,
-    city, locality,
-    description: document.getElementById('sellDesc').value,
-    amenities,
-    owner: `${currentUser.firstName} ${currentUser.lastName}`,
-    ownerPhone: document.getElementById('sellOwnerPhone').value || currentUser.phone || '',
-    rating: 0, reviews: 0, badge: 'new',
-    emoji: emojis[type] || '🏠',
-    address: document.getElementById('sellAddress').value,
-    lat: 17.4 + Math.random() * 0.2,
-    lng: 78.3 + Math.random() * 0.3,
-    addedAt: Date.now()
-  };
-
-  DB.properties.unshift(newProp);
-  DB.lastAddedId = newId;
-
-  // Reset form
-  e.target.reset();
-
-  // Navigate with success banner
-  showListingsWithNewPropertyBanner(title);
+  try {
+    showToast("Submitting property...", "success");
+    const res = await fetch(`${API_URL}/properties`, {
+      method: "POST", headers: { "Authorization": `Bearer ${token}` },
+      body: fd
+    });
+    const data = await res.json();
+    if (!data.success) { showToast(data.message, "error"); return; }
+    
+    // Refresh properties
+    const pRes = await fetch(`${API_URL}/properties?per_page=100`);
+    const pData = await pRes.json();
+    if(pData.success) {
+      DB.properties = pData.properties.map(p => ({
+        id: p.id, title: p.title, type: p.type, price: parseInt(p.price), area: parseFloat(p.area),
+        beds: p.beds, baths: p.baths, city: p.city, locality: p.locality, address: p.address,
+        description: p.description, amenities: p.amenities || [], owner: p.owner_name,
+        ownerPhone: p.owner_phone, rating: parseFloat(p.rating), reviews: p.review_count,
+        badge: p.badge, emoji: p.emoji, lat: parseFloat(p.lat), lng: parseFloat(p.lng),
+        images: p.images || []
+      }));
+      filteredProps = [...DB.properties];
+    }
+    
+    DB.lastAddedId = data.property_id;
+    e.target.reset();
+    showListingsWithNewPropertyBanner(document.getElementById('sellTitle').value);
+  } catch (err) {
+    console.error(err);
+    showToast("Error submitting property.", "error");
+  }
 }
 
 // ==============================
