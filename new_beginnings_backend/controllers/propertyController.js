@@ -198,7 +198,7 @@ exports.createProperty = async (req, res, next) => {
         city, locality || null, address || null, description || null,
         owner_name || null, owner_phone || null, req.user.id,
         badge || "new", emoji || "🏠", lat || null, lng || null,
-        req.user.role === "admin" ? "active" : "pending",
+        "active",
       ]
     );
 
