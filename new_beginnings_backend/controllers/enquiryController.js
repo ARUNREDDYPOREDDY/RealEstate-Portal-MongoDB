@@ -1,5 +1,7 @@
 // controllers/enquiryController.js
-const pool = require("../config/db");
+const Enquiry = require("../models/Enquiry");
+const Property = require("../models/Property");
+const mongoose = require("mongoose");
 
 // POST /api/enquiries
 exports.createEnquiry = async (req, res, next) => {
@@ -13,13 +15,17 @@ exports.createEnquiry = async (req, res, next) => {
       });
     }
 
-    // Check property exists
-    const prop = await pool.query(
-      "SELECT id FROM properties WHERE id = $1",
-      [property_id]
-    );
+    if (!mongoose.Types.ObjectId.isValid(property_id)) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
 
-    if (!prop.rows.length) {
+    // Check property exists
+    const prop = await Property.findById(property_id);
+
+    if (!prop) {
       return res.status(404).json({
         success: false,
         message: "Property not found",
@@ -27,24 +33,19 @@ exports.createEnquiry = async (req, res, next) => {
     }
 
     // Insert enquiry
-    const result = await pool.query(
-      `INSERT INTO enquiries (property_id, user_id, name, email, phone, message)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id`,
-      [
-        property_id,
-        req.user?.id || null,
-        name,
-        email,
-        phone || null,
-        message || null,
-      ]
-    );
+    const enquiry = await Enquiry.create({
+      property_id,
+      user_id: req.user?.id || null,
+      name,
+      email,
+      phone: phone || null,
+      message: message || null,
+    });
 
     res.status(201).json({
       success: true,
       message: "Enquiry sent! The owner will contact you soon.",
-      enquiry_id: result.rows[0].id,
+      enquiry_id: enquiry.id,
     });
   } catch (err) {
     next(err);
@@ -54,32 +55,33 @@ exports.createEnquiry = async (req, res, next) => {
 // GET /api/enquiries
 exports.getEnquiries = async (req, res, next) => {
   try {
-    let query, params;
+    let enquiries;
 
     if (req.user.role === "admin") {
-      query = `
-        SELECT e.*, p.title AS property_title, p.city AS property_city
-        FROM enquiries e
-        LEFT JOIN properties p ON p.id = e.property_id
-        ORDER BY e.created_at DESC
-      `;
-      params = [];
+      enquiries = await Enquiry.find()
+        .populate("property_id", "title city")
+        .sort({ createdAt: -1 });
     } else {
-      query = `
-        SELECT e.*, p.title AS property_title, p.city AS property_city
-        FROM enquiries e
-        LEFT JOIN properties p ON p.id = e.property_id
-        WHERE e.user_id = $1
-        ORDER BY e.created_at DESC
-      `;
-      params = [req.user.id];
+      enquiries = await Enquiry.find({ user_id: req.user.id })
+        .populate("property_id", "title city")
+        .sort({ createdAt: -1 });
     }
 
-    const result = await pool.query(query, params);
+    // Format output to match Postgres keys (property_title, property_city)
+    const formatted = enquiries.map((e) => {
+      const plain = e.toJSON();
+      return {
+        ...plain,
+        property_title: e.property_id ? e.property_id.title : null,
+        property_city: e.property_id ? e.property_id.city : null,
+        property_id: e.property_id ? e.property_id.id : null,
+        date: e.createdAt.toLocaleDateString("en-IN"),
+      };
+    });
 
     res.json({
       success: true,
-      enquiries: result.rows,
+      enquiries: formatted,
     });
   } catch (err) {
     next(err);
@@ -90,6 +92,11 @@ exports.getEnquiries = async (req, res, next) => {
 exports.updateEnquiryStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid enquiry ID" });
+    }
 
     if (!["new", "read", "replied"].includes(status)) {
       return res.status(400).json({
@@ -98,10 +105,11 @@ exports.updateEnquiryStatus = async (req, res, next) => {
       });
     }
 
-    await pool.query(
-      "UPDATE enquiries SET status = $1 WHERE id = $2",
-      [status, req.params.id]
-    );
+    const enquiry = await Enquiry.findByIdAndUpdate(id, { status }, { new: true });
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: "Enquiry not found" });
+    }
 
     res.json({
       success: true,

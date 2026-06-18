@@ -1,5 +1,6 @@
 // server.js — New Beginnings Real Estate Portal — Express Entry Point
 require("dotenv").config();
+require("./config/db");
 const express  = require("express");
 const cors     = require("cors");
 const path     = require("path");

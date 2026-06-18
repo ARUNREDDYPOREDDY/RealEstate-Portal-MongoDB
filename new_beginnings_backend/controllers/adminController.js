@@ -1,32 +1,38 @@
-const pool = require("../config/db");
+// controllers/adminController.js
+const Property = require("../models/Property");
+const User = require("../models/User");
 
 // STATS
 exports.getStats = async (req, res, next) => {
   try {
-    const total_properties = (await pool.query("SELECT COUNT(*) FROM properties")).rows[0].count;
-    const total_users = (await pool.query("SELECT COUNT(*) FROM users")).rows[0].count;
+    const total_properties = await Property.countDocuments();
+    const total_users = await User.countDocuments();
 
     res.json({
       success: true,
-      stats: { total_properties, total_users }
+      stats: { total_properties, total_users },
     });
-  } catch (err) { next(err); }
+  } catch (err) {
+    next(err);
+  }
 };
 
 // USERS
 exports.getUsers = async (req, res, next) => {
   try {
-    const result = await pool.query("SELECT * FROM users ORDER BY created_at DESC");
-    res.json({ success: true, users: result.rows });
-  } catch (err) { next(err); }
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json({ success: true, users });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // PENDING PROPERTIES
 exports.getPendingProperties = async (req, res, next) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM properties WHERE status='pending'"
-    );
-    res.json({ success: true, properties: result.rows });
-  } catch (err) { next(err); }
+    const properties = await Property.find({ status: "pending" }).sort({ createdAt: -1 });
+    res.json({ success: true, properties });
+  } catch (err) {
+    next(err);
+  }
 };

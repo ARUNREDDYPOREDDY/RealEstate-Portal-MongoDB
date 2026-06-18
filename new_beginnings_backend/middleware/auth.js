@@ -1,10 +1,10 @@
 // middleware/auth.js — JWT authentication & role guards
 const jwt = require("jsonwebtoken");
-const pool = require("../config/db");
+const User = require("../models/User");
 
 /**
  * Verifies the JWT from the Authorization header.
- * Attaches req.user = { id, email, role, ... } on success.
+ * Attaches req.user = User document on success.
  */
 const protect = async (req, res, next) => {
   let token;
@@ -25,18 +25,15 @@ const protect = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const { rows } = await pool.query(
-      "SELECT id, first_name, last_name, email, phone, city, role, is_active FROM users WHERE id = $1",
-      [decoded.id]
-    );
+    const user = await User.findById(decoded.id);
 
-    if (!rows.length || !rows[0].is_active) {
+    if (!user || !user.is_active) {
       return res
         .status(401)
         .json({ success: false, message: "User no longer exists or is deactivated" });
     }
 
-    req.user = rows[0];
+    req.user = user;
     next();
   } catch (err) {
     return res
@@ -59,11 +56,10 @@ const optionalAuth = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { rows } = await pool.query(
-      "SELECT id, first_name, last_name, email, phone, city, role, is_active FROM users WHERE id = $1",
-      [decoded.id]
-    );
-    if (rows.length && rows[0].is_active) req.user = rows[0];
+    const user = await User.findById(decoded.id);
+    if (user && user.is_active) {
+      req.user = user;
+    }
   } catch (_) {
     /* ignore — treat as guest */
   }

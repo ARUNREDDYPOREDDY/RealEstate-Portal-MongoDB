@@ -1,5 +1,7 @@
 // controllers/visitController.js
-const pool = require("../config/db");
+const Visit = require("../models/Visit");
+const Property = require("../models/Property");
+const mongoose = require("mongoose");
 
 // POST /api/visits
 exports.scheduleVisit = async (req, res, next) => {
@@ -13,24 +15,35 @@ exports.scheduleVisit = async (req, res, next) => {
       });
     }
 
-    const result = await pool.query(
-      `INSERT INTO visits (property_id, user_id, name, phone, visit_date, visit_time)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id`,
-      [
-        property_id,
-        req.user?.id || null,
-        name,
-        phone || null,
-        visit_date,
-        visit_time || null,
-      ]
-    );
+    if (!mongoose.Types.ObjectId.isValid(property_id)) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    // Check property exists
+    const prop = await Property.findById(property_id);
+    if (!prop) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    const visit = await Visit.create({
+      property_id,
+      user_id: req.user?.id || null,
+      name,
+      phone: phone || null,
+      visit_date: new Date(visit_date),
+      visit_time: visit_time || null,
+    });
 
     res.status(201).json({
       success: true,
       message: "Visit scheduled! The owner will confirm shortly.",
-      visit_id: result.rows[0].id,
+      visit_id: visit.id,
     });
   } catch (err) {
     next(err);
@@ -40,32 +53,30 @@ exports.scheduleVisit = async (req, res, next) => {
 // GET /api/visits
 exports.getVisits = async (req, res, next) => {
   try {
-    let query, params;
+    let visits;
 
     if (req.user.role === "admin") {
-      query = `
-        SELECT v.*, p.title AS property_title
-        FROM visits v
-        LEFT JOIN properties p ON p.id = v.property_id
-        ORDER BY v.visit_date DESC
-      `;
-      params = [];
+      visits = await Visit.find()
+        .populate("property_id", "title")
+        .sort({ visit_date: -1 });
     } else {
-      query = `
-        SELECT v.*, p.title AS property_title
-        FROM visits v
-        LEFT JOIN properties p ON p.id = v.property_id
-        WHERE v.user_id = $1
-        ORDER BY v.visit_date DESC
-      `;
-      params = [req.user.id];
+      visits = await Visit.find({ user_id: req.user.id })
+        .populate("property_id", "title")
+        .sort({ visit_date: -1 });
     }
 
-    const result = await pool.query(query, params);
+    const formatted = visits.map((v) => {
+      const plain = v.toJSON();
+      return {
+        ...plain,
+        property_title: v.property_id ? v.property_id.title : null,
+        property_id: v.property_id ? v.property_id.id : null,
+      };
+    });
 
     res.json({
       success: true,
-      visits: result.rows,
+      visits: formatted,
     });
   } catch (err) {
     next(err);
@@ -76,6 +87,11 @@ exports.getVisits = async (req, res, next) => {
 exports.updateVisitStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid visit ID" });
+    }
 
     if (!["pending", "confirmed", "cancelled"].includes(status)) {
       return res.status(400).json({
@@ -84,10 +100,11 @@ exports.updateVisitStatus = async (req, res, next) => {
       });
     }
 
-    await pool.query(
-      "UPDATE visits SET status = $1 WHERE id = $2",
-      [status, req.params.id]
-    );
+    const visit = await Visit.findByIdAndUpdate(id, { status }, { new: true });
+
+    if (!visit) {
+      return res.status(404).json({ success: false, message: "Visit not found" });
+    }
 
     res.json({
       success: true,

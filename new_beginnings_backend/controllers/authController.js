@@ -1,7 +1,7 @@
 // controllers/authController.js
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const pool = require("../config/db");
+const User = require("../models/User");
 
 // ── Helper ────────────────────────────────────────────────────
 const signToken = (id) =>
@@ -10,7 +10,8 @@ const signToken = (id) =>
   });
 
 const sanitizeUser = (user) => {
-  const { password, ...safe } = user;
+  const plain = user.toJSON ? user.toJSON() : user;
+  const { password, ...safe } = plain;
   return safe;
 };
 
@@ -34,12 +35,9 @@ exports.register = async (req, res, next) => {
     }
 
     // Check existing user
-    const existing = await pool.query(
-      "SELECT id FROM users WHERE email = $1",
-      [email.toLowerCase()]
-    );
+    const existing = await User.findOne({ email: email.toLowerCase() });
 
-    if (existing.rows.length) {
+    if (existing) {
       return res.status(409).json({
         success: false,
         message: "Email is already registered",
@@ -49,28 +47,29 @@ exports.register = async (req, res, next) => {
     const hashed = await bcrypt.hash(password, 10);
 
     // Insert user
-    const result = await pool.query(
-      `INSERT INTO users (first_name, last_name, email, phone, city, password)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id`,
-      [first_name, last_name, email.toLowerCase(), phone || null, city || null, hashed]
-    );
+    const user = await User.create({
+      first_name,
+      last_name,
+      email: email.toLowerCase(),
+      phone: phone || null,
+      city: city || null,
+      password: hashed,
+    });
 
-    const userId = result.rows[0].id;
-    const token = signToken(userId);
+    const token = signToken(user.id);
 
     res.status(201).json({
       success: true,
       message: "Account created successfully",
       token,
       user: {
-        id: userId,
-        first_name,
-        last_name,
-        email: email.toLowerCase(),
-        phone,
-        city,
-        role: "user",
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        phone: user.phone,
+        city: user.city,
+        role: user.role,
       },
     });
   } catch (err) {
@@ -90,19 +89,14 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email.toLowerCase()]
-    );
+    const user = await User.findOne({ email: email.toLowerCase() });
 
-    if (!result.rows.length) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
       });
     }
-
-    const user = result.rows[0];
 
     if (!user.is_active) {
       return res.status(403).json({
@@ -136,13 +130,8 @@ exports.login = async (req, res, next) => {
 // ── GET /api/auth/me ──────────────────────────────────────────
 exports.getMe = async (req, res, next) => {
   try {
-    const result = await pool.query(
-      `SELECT id, first_name, last_name, email, phone, city, role, created_at
-       FROM users WHERE id = $1`,
-      [req.user.id]
-    );
-
-    res.json({ success: true, user: result.rows[0] });
+    const user = await User.findById(req.user.id).select("-password");
+    res.json({ success: true, user });
   } catch (err) {
     next(err);
   }
@@ -153,11 +142,15 @@ exports.updateMe = async (req, res, next) => {
   try {
     const { first_name, last_name, phone, city } = req.body;
 
-    await pool.query(
-      `UPDATE users
-       SET first_name = $1, last_name = $2, phone = $3, city = $4
-       WHERE id = $5`,
-      [first_name, last_name, phone || null, city || null, req.user.id]
+    await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        first_name,
+        last_name,
+        phone: phone || null,
+        city: city || null,
+      },
+      { new: true }
     );
 
     res.json({
@@ -188,15 +181,9 @@ exports.changePassword = async (req, res, next) => {
       });
     }
 
-    const result = await pool.query(
-      "SELECT password FROM users WHERE id = $1",
-      [req.user.id]
-    );
+    const user = await User.findById(req.user.id);
 
-    const match = await bcrypt.compare(
-      current_password,
-      result.rows[0].password
-    );
+    const match = await bcrypt.compare(current_password, user.password);
 
     if (!match) {
       return res.status(400).json({
@@ -207,10 +194,8 @@ exports.changePassword = async (req, res, next) => {
 
     const hashed = await bcrypt.hash(new_password, 10);
 
-    await pool.query(
-      "UPDATE users SET password = $1 WHERE id = $2",
-      [hashed, req.user.id]
-    );
+    user.password = hashed;
+    await user.save();
 
     res.json({
       success: true,

@@ -1,19 +1,30 @@
 // controllers/favoriteController.js
-const pool = require("../config/db");
+const Favorite = require("../models/Favorite");
+const Property = require("../models/Property");
+const mongoose = require("mongoose");
 
 // GET /api/favorites
 exports.getFavorites = async (req, res, next) => {
   try {
-    const result = await pool.query(
-      `SELECT p.*, f.created_at AS saved_at
-       FROM favorites f
-       JOIN properties p ON p.id = f.property_id
-       WHERE f.user_id = $1 AND p.status = 'active'
-       ORDER BY f.created_at DESC`,
-      [req.user.id]
-    );
+    const favorites = await Favorite.find({ user_id: req.user.id })
+      .populate({
+        path: "property_id",
+        match: { status: "active" },
+      })
+      .sort({ createdAt: -1 });
 
-    res.json({ success: true, favorites: result.rows });
+    // Filter out favorites whose property is not found or not active (which returns null after populate match)
+    const validFavorites = favorites
+      .filter((f) => f.property_id !== null)
+      .map((f) => {
+        const prop = f.property_id.toJSON();
+        return {
+          ...prop,
+          saved_at: f.createdAt,
+        };
+      });
+
+    res.json({ success: true, favorites: validFavorites });
   } catch (err) {
     next(err);
   }
@@ -24,25 +35,28 @@ exports.addFavorite = async (req, res, next) => {
   try {
     const { property_id } = req.params;
 
-    // Check property exists
-    const prop = await pool.query(
-      "SELECT id FROM properties WHERE id = $1",
-      [property_id]
-    );
-
-    if (!prop.rows.length) {
+    if (!mongoose.Types.ObjectId.isValid(property_id)) {
       return res.status(404).json({
         success: false,
         message: "Property not found",
       });
     }
 
-    // PostgreSQL equivalent of INSERT IGNORE
-    await pool.query(
-      `INSERT INTO favorites (user_id, property_id)
-       VALUES ($1, $2)
-       ON CONFLICT (user_id, property_id) DO NOTHING`,
-      [req.user.id, property_id]
+    // Check property exists
+    const prop = await Property.findById(property_id);
+
+    if (!prop) {
+      return res.status(404).json({
+        success: false,
+        message: "Property not found",
+      });
+    }
+
+    // Insert or do nothing on conflict
+    await Favorite.findOneAndUpdate(
+      { user_id: req.user.id, property_id },
+      { user_id: req.user.id, property_id },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
     res.status(201).json({
@@ -57,10 +71,13 @@ exports.addFavorite = async (req, res, next) => {
 // DELETE /api/favorites/:property_id
 exports.removeFavorite = async (req, res, next) => {
   try {
-    await pool.query(
-      "DELETE FROM favorites WHERE user_id = $1 AND property_id = $2",
-      [req.user.id, req.params.property_id]
-    );
+    const { property_id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(property_id)) {
+      return res.status(400).json({ success: false, message: "Invalid property ID" });
+    }
+
+    await Favorite.deleteOne({ user_id: req.user.id, property_id });
 
     res.json({
       success: true,
@@ -74,14 +91,11 @@ exports.removeFavorite = async (req, res, next) => {
 // GET /api/favorites/ids
 exports.getFavoriteIds = async (req, res, next) => {
   try {
-    const result = await pool.query(
-      "SELECT property_id FROM favorites WHERE user_id = $1",
-      [req.user.id]
-    );
+    const favorites = await Favorite.find({ user_id: req.user.id }).select("property_id");
 
     res.json({
       success: true,
-      ids: result.rows.map((r) => r.property_id),
+      ids: favorites.map((r) => r.property_id.toString()),
     });
   } catch (err) {
     next(err);

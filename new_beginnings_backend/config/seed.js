@@ -1,93 +1,149 @@
-// config/seed.js — PostgreSQL version
+// config/seed.js — MongoDB version
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
-const pool = require("./db");
+const mongoose = require("mongoose");
+const User = require("../models/User");
+const Property = require("../models/Property");
+const Review = require("../models/Review");
 
 const seed = async () => {
-  console.log("🌱 Starting PostgreSQL seed...");
+  console.log("🌱 Starting MongoDB seed...");
 
   try {
-    const fs = require('fs');
-    const path = require('path');
-    const schemaPath = path.join(__dirname, 'schema.sql');
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-    
-    console.log("🔨 Creating tables from schema.sql...");
-    await pool.query(schemaSql);
-    console.log("✅ Tables created or already exist!");
-    
+    // Wait for connection to be ready
+    if (mongoose.connection.readyState !== 1) {
+      await new Promise((resolve, reject) => {
+        mongoose.connection.once("connected", resolve);
+        mongoose.connection.once("error", reject);
+      });
+    }
+
     // ── USERS ─────────────────────────────────────
-    const userResult = await pool.query("SELECT COUNT(*) FROM users");
-    const userCount = parseInt(userResult.rows[0].count);
+    const userCount = await User.countDocuments();
 
     if (userCount === 0) {
       const hash = (p) => bcrypt.hashSync(p, 10);
 
-      await pool.query(
-        `INSERT INTO users (first_name, last_name, email, phone, city, password, role)
-         VALUES 
-         ($1,$2,$3,$4,$5,$6,$7),
-         ($8,$9,$10,$11,$12,$13,$14)`,
-        [
-          "Arjun", "Sharma", "user@demo.com", "+91 98765 43210", "Hyderabad", hash("demo123"), "user",
-          "Admin", "User", "admin@demo.com", "+91 98765 00000", "Hyderabad", hash("admin123"), "admin"
-        ]
-      );
+      await User.create([
+        {
+          first_name: "Arjun",
+          last_name: "Sharma",
+          email: "user@demo.com",
+          phone: "+91 98765 43210",
+          city: "Hyderabad",
+          password: hash("demo123"),
+          role: "user",
+        },
+        {
+          first_name: "Admin",
+          last_name: "User",
+          email: "admin@demo.com",
+          phone: "+91 98765 00000",
+          city: "Hyderabad",
+          password: hash("admin123"),
+          role: "admin",
+        },
+      ]);
 
       console.log("✅ Users seeded");
     }
 
     // ── PROPERTIES ────────────────────────────────
-    const propResult = await pool.query("SELECT COUNT(*) FROM properties");
-    const propCount = parseInt(propResult.rows[0].count);
+    const propCount = await Property.countDocuments();
 
     if (propCount === 0) {
-      const result = await pool.query(
-        `INSERT INTO properties 
-        (title, type, price, area, beds, baths, city, locality, address, description,
-         owner_name, owner_phone, rating, review_count, badge, emoji, lat, lng, status)
-        VALUES
-        ('Luxury 3BHK in Banjara Hills','Apartment',8500000,1800,3,3,'Hyderabad','Banjara Hills','Road No.12','Luxury flat','Rajesh','98765',4.8,24,'featured','🏢',17.41,78.43,'active'),
-        ('Affordable 2BHK','Apartment',4200000,1100,2,2,'Hyderabad','Kukatpally','KPHB','Budget home','Farhan','98765',4.2,31,'new','🏠',17.49,78.39,'active')
-        RETURNING id`
-      );
+      // Find admin to assign as owner if needed
+      const adminUser = await User.findOne({ role: "admin" });
+      const ownerId = adminUser ? adminUser._id : null;
 
-      const ids = result.rows.map(r => r.id);
-
-      // ── AMENITIES ─────────────────────────────
-      for (const id of ids) {
-        await pool.query(
-          "INSERT INTO amenities (property_id, name) VALUES ($1,$2)",
-          [id, "Parking"]
-        );
-      }
+      await Property.create([
+        {
+          title: "Luxury 3BHK in Banjara Hills",
+          type: "Apartment",
+          price: 8500000,
+          area: 1800,
+          beds: 3,
+          baths: 3,
+          city: "Hyderabad",
+          locality: "Banjara Hills",
+          address: "Road No.12",
+          description: "Luxury flat with premium features, spacious layout and excellent locality.",
+          owner_name: "Rajesh",
+          owner_phone: "98765",
+          owner_id: ownerId,
+          rating: 4.8,
+          review_count: 24,
+          badge: "featured",
+          emoji: "🏢",
+          lat: 17.41,
+          lng: 78.43,
+          status: "active",
+          amenities: ["Parking", "Gym", "Power Backup", "Security"],
+          images: [{ url: "/uploads/luxury_apartment.jpg", is_primary: true }],
+        },
+        {
+          title: "Affordable 2BHK",
+          type: "Apartment",
+          price: 4200000,
+          area: 1100,
+          beds: 2,
+          baths: 2,
+          city: "Hyderabad",
+          locality: "Kukatpally",
+          address: "KPHB",
+          description: "Budget home ideal for families, close to schools and shopping areas.",
+          owner_name: "Farhan",
+          owner_phone: "98765",
+          owner_id: ownerId,
+          rating: 4.2,
+          review_count: 31,
+          badge: "new",
+          emoji: "🏠",
+          lat: 17.49,
+          lng: 78.39,
+          status: "active",
+          amenities: ["Parking", "Lift", "Water Facility"],
+          images: [{ url: "/uploads/budget_apartment.jpg", is_primary: true }],
+        },
+      ]);
 
       console.log("✅ Properties + Amenities seeded");
     }
 
     // ── REVIEWS (TESTIMONIALS) ───────────────────
-    const reviewResult = await pool.query(
-      "SELECT COUNT(*) FROM reviews WHERE property_id IS NULL"
-    );
+    const reviewCount = await Review.countDocuments({ property_id: null });
 
-    if (parseInt(reviewResult.rows[0].count) === 0) {
-      await pool.query(
-        `INSERT INTO reviews (property_id, user_id, name, role_label, rating, review_text)
-         VALUES
-         (NULL,NULL,'Siddharth','Buyer',5,'Great platform'),
-         (NULL,NULL,'Meena','Seller',5,'Very useful')`
-      );
+    if (reviewCount === 0) {
+      await Review.create([
+        {
+          property_id: null,
+          user_id: null,
+          name: "Siddharth",
+          role_label: "Buyer",
+          rating: 5,
+          review_text: "Great platform! Found my dream home within a few days.",
+        },
+        {
+          property_id: null,
+          user_id: null,
+          name: "Meena",
+          role_label: "Seller",
+          rating: 5,
+          review_text: "Very useful and intuitive portal. The admin approvals were fast and clean.",
+        },
+      ]);
 
       console.log("✅ Reviews seeded");
     }
 
     console.log("\n🎉 Seed completed successfully!");
     process.exit(0);
-
   } catch (err) {
     console.error("❌ Seed error:", err.message);
     process.exit(1);
   }
 };
 
+// Import db to connect
+require("./db");
 seed();
