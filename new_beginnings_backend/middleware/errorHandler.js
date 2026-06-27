@@ -10,16 +10,23 @@ const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || "Internal server error";
 
-  // MySQL duplicate entry
-  if (err.code === "ER_DUP_ENTRY") {
+  // MongoDB duplicate key (e.g. unique email)
+  if (err.code === 11000) {
     statusCode = 409;
-    message = "A record with that value already exists";
+    const field = Object.keys(err.keyValue || {})[0] || "field";
+    message = `A record with that ${field} already exists`;
   }
 
-  // MySQL foreign key violation
-  if (err.code === "ER_NO_REFERENCED_ROW_2") {
+  // Mongoose validation error
+  if (err.name === "ValidationError") {
     statusCode = 400;
-    message = "Referenced record does not exist";
+    message = Object.values(err.errors).map(e => e.message).join(", ");
+  }
+
+  // Mongoose bad ObjectId (CastError)
+  if (err.name === "CastError") {
+    statusCode = 400;
+    message = `Invalid value for field: ${err.path}`;
   }
 
   // JWT errors

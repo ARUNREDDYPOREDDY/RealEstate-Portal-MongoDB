@@ -1,6 +1,9 @@
 // controllers/propertyController.js
 const Property = require("../models/Property");
-const Review = require("../models/Review");
+const Review   = require("../models/Review");
+const Enquiry  = require("../models/Enquiry");
+const Visit    = require("../models/Visit");
+const Favorite = require("../models/Favorite");
 const mongoose = require("mongoose");
 
 // ── GET /api/properties ───────────────────────────────────────
@@ -289,7 +292,12 @@ exports.deleteProperty = async (req, res, next) => {
     }
 
     // Clean up related reviews, enquiries, visits, favorites
-    await Review.deleteMany({ property_id: id });
+    await Promise.all([
+      Review.deleteMany({ property_id: id }),
+      Enquiry.deleteMany({ property_id: id }),
+      Visit.deleteMany({ property_id: id }),
+      Favorite.deleteMany({ property_id: id }),
+    ]);
 
     res.json({ success: true, message: "Property deleted" });
   } catch (err) {

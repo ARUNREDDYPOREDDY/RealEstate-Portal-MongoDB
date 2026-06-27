@@ -6,9 +6,7 @@
 // ==============================
 // DATA STORE
 // ==============================
-const API_URL = (window.location.port && window.location.port !== "5001")
-  ? "http://localhost:5001/api"
-  : `${window.location.origin}/api`;
+const API_URL = `${window.location.protocol}//${window.location.hostname}:5009/api`;
 
 const DB = {
   users: [],

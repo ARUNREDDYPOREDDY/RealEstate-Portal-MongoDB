@@ -1,29 +1,60 @@
-require('dotenv').config();
-const bcrypt = require('bcryptjs');
-const User = require('../models/User');
+// scripts/createAdmin.js — One-time script to seed an admin user
+require("dotenv").config({ path: require("path").join(__dirname, "../.env") });
+require("../config/db");
 
-// Ensure DB connection
-require('../config/db');
+const bcrypt      = require("bcryptjs");
+const User        = require("../models/User");
+const mongoose    = require("mongoose");
 
-async function run() {
+const ADMIN = {
+  first_name: "Rohith Reddy",
+  last_name:  "Poreddy",
+  email:      "poreddyrohith@gmail.com",
+  password:   "123456",
+  role:       "admin",
+};
+
+(async () => {
+  // Wait for mongoose to connect
+  await new Promise((resolve) => {
+    if (mongoose.connection.readyState === 1) return resolve();
+    mongoose.connection.once("open", resolve);
+  });
+
   try {
-    const email = process.env.CREATE_ADMIN_EMAIL || 'bootstrap_admin@local';
-    const pass = process.env.CREATE_ADMIN_PASS || 'AdminPass123';
+    const existing = await User.findOne({ email: ADMIN.email });
 
-    const exists = await User.findOne({ email });
-    if (exists) {
-      console.log('ℹ️ Admin already exists:', email);
+    if (existing) {
+      if (existing.role !== "admin") {
+        existing.role = "admin";
+        await existing.save();
+        console.log(`✅ Existing user promoted to admin: ${ADMIN.email}`);
+      } else {
+        console.log(`ℹ️  Admin already exists: ${ADMIN.email}`);
+      }
       process.exit(0);
     }
 
-    const hash = bcrypt.hashSync(pass, 10);
-    const u = await User.create({ first_name: 'Bootstrap', last_name: 'Admin', email, phone: '0000000000', password: hash, role: 'admin' });
-    console.log('✅ Created admin:', u.email, '\nUse credentials ->', email, pass);
-    process.exit(0);
-  } catch (err) {
-    console.error('❌ createAdmin error:', err.message || err);
-    process.exit(1);
-  }
-}
+    const hashed = await bcrypt.hash(ADMIN.password, 10);
 
-run();
+    const user = await User.create({
+      first_name: ADMIN.first_name,
+      last_name:  ADMIN.last_name,
+      email:      ADMIN.email,
+      password:   hashed,
+      role:       "admin",
+      is_active:  true,
+    });
+
+    console.log("\n🎉 Admin user created successfully!");
+    console.log(`   Name  : ${user.first_name} ${user.last_name}`);
+    console.log(`   Email : ${user.email}`);
+    console.log(`   Role  : ${user.role}`);
+    console.log(`   ID    : ${user._id}\n`);
+  } catch (err) {
+    console.error("❌ Error creating admin:", err.message);
+  } finally {
+    await mongoose.disconnect();
+    process.exit(0);
+  }
+})();

@@ -15,10 +15,12 @@ const sanitizeUser = (user) => {
   return safe;
 };
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // ── POST /api/auth/register ───────────────────────────────────
 exports.register = async (req, res, next) => {
   try {
-    const { first_name, last_name, email, phone, city, password } = req.body;
+    const { first_name, last_name, email, phone, city, password, admin_secret } = req.body;
 
     if (!first_name || !last_name || !email || !password) {
       return res.status(400).json({
@@ -46,6 +48,9 @@ exports.register = async (req, res, next) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
+    // Allow creating an admin when a matching secret is provided
+    const role = admin_secret && admin_secret === process.env.CREATE_ADMIN_SECRET ? 'admin' : undefined;
+
     // Insert user
     const user = await User.create({
       first_name,
@@ -54,6 +59,7 @@ exports.register = async (req, res, next) => {
       phone: phone || null,
       city: city || null,
       password: hashed,
+      role,
     });
 
     const token = signToken(user.id);
@@ -81,20 +87,34 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const identifier = typeof email === "string" ? email.trim() : "";
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: "Email or name and password are required",
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const normalized = identifier.toLowerCase();
+    const nameParts = normalized.split(/\s+/).filter(Boolean);
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ");
+
+    const user = await User.findOne({
+      $or: [
+        { email: normalized },
+        ...(firstName ? [{ first_name: { $regex: `^${escapeRegex(firstName)}$`, $options: "i" } }] : []),
+        ...(firstName && lastName
+          ? [{ first_name: { $regex: `^${escapeRegex(firstName)}$`, $options: "i" }, last_name: { $regex: `^${escapeRegex(lastName)}$`, $options: "i" } }]
+          : []),
+      ],
+    });
 
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Invalid email or password",
+        message: "Invalid email, name, or password",
       });
     }
 

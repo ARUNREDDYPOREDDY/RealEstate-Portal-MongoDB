@@ -6,8 +6,9 @@ const mongoose = require("mongoose");
 // GET /api/reviews/testimonials
 exports.getTestimonials = async (req, res, next) => {
   try {
-    const reviews = await Review.find({ property_id: null })
-      .sort({ createdAt: -1 })
+    // Return top-rated reviews across all properties as testimonials
+    const reviews = await Review.find({ rating: { $gte: 4 } })
+      .sort({ rating: -1, createdAt: -1 })
       .limit(6);
 
     res.json({ success: true, reviews });
