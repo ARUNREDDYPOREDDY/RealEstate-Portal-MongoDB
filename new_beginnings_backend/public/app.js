@@ -6,7 +6,9 @@
 // ==============================
 // DATA STORE
 // ==============================
-const API_URL = `${window.location.protocol}//${window.location.hostname}:5009/api`;
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? `http://localhost:5009/api` 
+  : `/api`;
 
 const DB = {
   users: [],
@@ -1074,9 +1076,10 @@ function switchAdminTab(btn, tab) {
   renderAdminTab(tab);
 }
 
-function renderAdminTab(tab) {
+async function renderAdminTab(tab) {
   const content = document.getElementById('adminTabContent');
   if (!content) return;
+  const token = sessionStorage.getItem('nbToken');
 
   if (tab === 'properties') {
     content.innerHTML = `
@@ -1088,9 +1091,9 @@ function renderAdminTab(tab) {
         <table>
           <thead><tr><th>#</th><th>Property</th><th>Type</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>
-            ${DB.properties.slice(0,10).map((p,i) => `
+            ${DB.properties.slice(0, 100).map((p, i) => `
               <tr>
-                <td>${i+1}</td>
+                <td>${i + 1}</td>
                 <td><b>${p.emoji} ${p.title}</b><br><span style="font-size:12px;color:var(--text-light)">${p.locality}, ${p.city}</span></td>
                 <td>${p.type}</td>
                 <td style="font-weight:600;color:var(--accent)">${formatPrice(p.price)}</td>
@@ -1106,19 +1109,42 @@ function renderAdminTab(tab) {
       </div>
     `;
   } else if (tab === 'users') {
+    content.innerHTML = '<div style="text-align:center;padding:40px">Loading users...</div>';
+    try {
+      const res = await fetch(`${API_URL}/admin/users`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        DB.users = data.users.map(u => ({
+          id: u.id,
+          firstName: u.first_name,
+          lastName: u.last_name,
+          email: u.email,
+          role: u.role,
+          isActive: u.is_active
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch users", err);
+    }
+
     content.innerHTML = `
       <div class="admin-table">
         <table>
           <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>
-            ${DB.users.map((u,i) => `
+            ${DB.users.map((u, i) => `
               <tr>
-                <td>${i+1}</td>
+                <td>${i + 1}</td>
                 <td><b>${u.firstName} ${u.lastName}</b></td>
                 <td>${u.email}</td>
-                <td><span class="status-badge ${u.role==='admin'?'status-pending':'status-active'}">${u.role}</span></td>
-                <td><span class="status-badge status-active">Active</span></td>
-                <td><button class="btn btn-sm btn-danger" onclick="showToast('User blocked.')">Block</button></td>
+                <td><span class="status-badge ${u.role === 'admin' ? 'status-pending' : 'status-active'}">${u.role}</span></td>
+                <td><span class="status-badge ${u.isActive ? 'status-active' : 'status-danger'}">${u.isActive ? 'Active' : 'Blocked'}</span></td>
+                <td>
+                   ${u.role !== 'admin' ? `<button class="btn btn-sm btn-primary" onclick="promoteToAdmin('${u.id}')">Make Admin</button>` : ''}
+                   <button class="btn btn-sm btn-danger" onclick="showToast('User state toggle not implemented.')">${u.isActive ? 'Block' : 'Unblock'}</button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -1126,14 +1152,38 @@ function renderAdminTab(tab) {
       </div>
     `;
   } else if (tab === 'enquiries') {
+    content.innerHTML = '<div style="text-align:center;padding:40px">Loading enquiries...</div>';
+    try {
+      const res = await fetch(`${API_URL}/enquiries`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        DB.enquiries = data.enquiries.map(e => ({
+          id: e.id,
+          propertyId: e.property_id,
+          propertyTitle: e.property_title || "General",
+          name: e.name,
+          email: e.email,
+          phone: e.phone,
+          message: e.message,
+          date: e.date,
+          status: e.status,
+          type: 'enquiry'
+        }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch enquiries", err);
+    }
+
     content.innerHTML = DB.enquiries.length === 0 ? `<div class="empty-state"><div class="empty-icon">📩</div><h3>No enquiries yet</h3></div>` : `
       <div class="admin-table">
         <table>
           <thead><tr><th>#</th><th>From</th><th>Property</th><th>Message</th><th>Date</th><th>Status</th></tr></thead>
           <tbody>
-            ${DB.enquiries.map((e,i) => `
+            ${DB.enquiries.map((e, i) => `
               <tr>
-                <td>${i+1}</td>
+                <td>${i + 1}</td>
                 <td><b>${e.name}</b><br><span style="font-size:12px">${e.email}</span></td>
                 <td style="font-size:13px">${e.propertyTitle}</td>
                 <td style="font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.message}</td>
@@ -1146,18 +1196,70 @@ function renderAdminTab(tab) {
       </div>
     `;
   } else if (tab === 'approvals') {
-    content.innerHTML = `
-      <div class="admin-table">
-        <table>
-          <thead><tr><th>#</th><th>Property</th><th>Submitted By</th><th>Date</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-light)">No pending approvals at the moment.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    `;
+    content.innerHTML = '<div style="text-align:center;padding:40px">Loading pending properties...</div>';
+    try {
+      const res = await fetch(`${API_URL}/admin/pending-properties`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      
+      content.innerHTML = `
+        <div class="admin-table">
+          <table>
+            <thead><tr><th>#</th><th>Property</th><th>Submitted By</th><th>Price</th><th>Actions</th></tr></thead>
+            <tbody>
+              ${data.success && data.properties.length > 0 ? data.properties.map((p, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td><b>${p.emoji || '🏠'} ${p.title}</b></td>
+                  <td>${p.owner_name}</td>
+                  <td>${formatPrice(p.price)}</td>
+                  <td>
+                    <button class="btn btn-sm btn-success" onclick="approveProperty('${p.id}')">Approve</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteProperty('${p.id}')">Reject</button>
+                  </td>
+                </tr>
+              `).join('') : `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-light)">No pending approvals at the moment.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      `;
+    } catch (err) {
+      content.innerHTML = '<div style="text-align:center;padding:40px">Failed to load approvals.</div>';
+    }
   }
 }
+
+async function promoteToAdmin(userId) {
+  if (!confirm("Are you sure you want to promote this user to Admin?")) return;
+  const token = sessionStorage.getItem('nbToken');
+  try {
+    const res = await fetch(`${API_URL}/admin/promote`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` 
+      },
+      body: JSON.stringify({ userId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast("User promoted to Admin!", "success");
+      renderAdminTab('users');
+    } else {
+      showToast(data.message, "error");
+    }
+  } catch (err) {
+    showToast("Failed to promote user.", "error");
+  }
+}
+
+async function approveProperty(id) {
+  // Logic to approve property (e.g., status to 'active')
+  // For now, let's just show a toast as there might not be a specific approve endpoint yet
+  showToast("Approval feature coming soon! User deleteProperty for now to manage.", "info");
+}
+
 
 async function deleteProperty(id) {
   if (!confirm('Are you sure you want to delete this property?')) return;

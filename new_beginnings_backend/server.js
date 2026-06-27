@@ -27,14 +27,12 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 // ── Middleware ────────────────────────────────────────────────
 app.use(cors({
   origin: [
-    "http://localhost:5009",        // Backend serving frontend
+    "http://localhost:5009",
     "http://127.0.0.1:5009",
-    process.env.CLIENT_URL || "http://localhost:3000",
-    "http://127.0.0.1:5500",        // VS Code Live Server
     "http://localhost:5500",
-    "https://new-beginnings-portal-gbj6.onrender.com",
-    "https://new-beginnings-portal-gbj6.onrender.com/"
-  ],
+    "http://127.0.0.1:5500",
+    process.env.CLIENT_URL,
+  ].filter(Boolean).concat([/\.onrender\.com$/]),
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
