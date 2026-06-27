@@ -36,3 +36,28 @@ exports.getPendingProperties = async (req, res, next) => {
     next(err);
   }
 };
+
+// Promote a user to admin
+exports.promoteUser = async (req, res, next) => {
+  try {
+    const { userId, email } = req.body;
+
+    if (!userId && !email) {
+      return res.status(400).json({ success: false, message: 'Provide `userId` or `email` to promote.' });
+    }
+
+    const query = userId ? { _id: userId } : { email };
+    const user = await User.findOne(query);
+
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+
+    if (user.role === 'admin') return res.json({ success: true, message: 'User already an admin' });
+
+    user.role = 'admin';
+    await user.save();
+
+    res.json({ success: true, message: 'User promoted to admin', user: { id: user._id, email: user.email, role: user.role } });
+  } catch (err) {
+    next(err);
+  }
+};

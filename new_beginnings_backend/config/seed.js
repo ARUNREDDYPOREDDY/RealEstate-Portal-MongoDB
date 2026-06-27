@@ -19,33 +19,34 @@ const seed = async () => {
     }
 
     // ── USERS ─────────────────────────────────────
-    const userCount = await User.countDocuments();
+    const userExists = await User.findOne({ email: "user@demo.com" });
+    const adminExists = await User.findOne({ email: "admin@demo.com" });
+    const hash = (p) => bcrypt.hashSync(p, 10);
 
-    if (userCount === 0) {
-      const hash = (p) => bcrypt.hashSync(p, 10);
+    if (!userExists) {
+      await User.create({
+        first_name: "Arjun",
+        last_name: "Sharma",
+        email: "user@demo.com",
+        phone: "+91 98765 43210",
+        city: "Hyderabad",
+        password: hash("demo123"),
+        role: "user",
+      });
+      console.log("✅ Demo User seeded");
+    }
 
-      await User.create([
-        {
-          first_name: "Arjun",
-          last_name: "Sharma",
-          email: "user@demo.com",
-          phone: "+91 98765 43210",
-          city: "Hyderabad",
-          password: hash("demo123"),
-          role: "user",
-        },
-        {
-          first_name: "Admin",
-          last_name: "User",
-          email: "admin@demo.com",
-          phone: "+91 98765 00000",
-          city: "Hyderabad",
-          password: hash("admin123"),
-          role: "admin",
-        },
-      ]);
-
-      console.log("✅ Users seeded");
+    if (!adminExists) {
+      await User.create({
+        first_name: "Admin",
+        last_name: "User",
+        email: "admin@demo.com",
+        phone: "+91 98765 00000",
+        city: "Hyderabad",
+        password: hash("admin123"),
+        role: "admin",
+      });
+      console.log("✅ Demo Admin seeded");
     }
 
     // ── PROPERTIES ────────────────────────────────

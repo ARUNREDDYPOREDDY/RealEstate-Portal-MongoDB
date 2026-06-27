@@ -6,7 +6,9 @@
 // ==============================
 // DATA STORE
 // ==============================
-const API_URL = "https://new-beginnings-api.onrender.com/api";
+const API_URL = (window.location.port && window.location.port !== "5001")
+  ? "http://localhost:5001/api"
+  : `${window.location.origin}/api`;
 
 const DB = {
   users: [],
@@ -186,11 +188,6 @@ async function doLogin() {
   }
 }
 
-function quickLogin(email, pass, role) {
-  document.getElementById('loginEmail').value = email;
-  document.getElementById('loginPassword').value = pass;
-  doLogin();
-}
 
 async function doRegister() {
   const first = document.getElementById('regFirst').value.trim();
@@ -307,15 +304,15 @@ function buildCard(prop) {
   return `
     <div class="property-card" data-id="${prop.id}">
       <div class="card-image-wrap">
-        <div class="card-image" onclick="showDetail(${prop.id})">${prop.emoji}</div>
+        <div class="card-image" onclick="showDetail('${prop.id}')">${prop.emoji}</div>
         ${prop.badge ? `<div class="card-badge badge-${prop.badge}">${prop.badge}</div>` : ''}
-        <button class="card-fav ${fav?'active':''}" onclick="toggleFav(${prop.id},this)" title="Save property">
+        <button class="card-fav ${fav?'active':''}" onclick="toggleFav('${prop.id}',this)" title="Save property">
           ${fav ? '❤️' : '🤍'}
         </button>
         <div class="card-price-tag">${formatPrice(prop.price)}</div>
-        <button class="card-compare ${inCompare?'active':''}" onclick="addToCompare(${prop.id})">⚖ Compare</button>
+        <button class="card-compare ${inCompare?'active':''}" onclick="addToCompare('${prop.id}')">⚖ Compare</button>
       </div>
-      <div class="card-body" onclick="showDetail(${prop.id})">
+      <div class="card-body" onclick="showDetail('${prop.id}')">
         <div class="card-type">${prop.type}</div>
         <div class="card-title">${prop.title}</div>
         <div class="card-location">${prop.locality}, ${prop.city}</div>
@@ -331,8 +328,8 @@ function buildCard(prop) {
           <span>${prop.rating} (${prop.reviews})</span>
         </div>
         <div class="card-actions">
-          <button class="card-action-btn btn-enquire" onclick="openEnquiry(${prop.id})">Enquire</button>
-          <button class="card-action-btn btn-view" onclick="showDetail(${prop.id})">View →</button>
+          <button class="card-action-btn btn-enquire" onclick="openEnquiry('${prop.id}')">Enquire</button>
+          <button class="card-action-btn btn-view" onclick="showDetail('${prop.id}')">View →</button>
         </div>
       </div>
     </div>
@@ -536,9 +533,9 @@ function showDetail(id) {
         </div>
       </div>
       <div class="detail-actions">
-        <button class="detail-action-btn dab-fav" onclick="toggleFav(${prop.id},this)">${fav?'❤️':'🤍'} ${fav?'Saved':'Save'}</button>
+        <button class="detail-action-btn dab-fav" onclick="toggleFav('${prop.id}',this)">${fav?'❤️':'🤍'} ${fav?'Saved':'Save'}</button>
         <button class="detail-action-btn dab-share" onclick="shareProperty()">🔗 Share</button>
-        <button class="detail-action-btn dab-compare" onclick="addToCompare(${prop.id})">⚖ Compare</button>
+        <button class="detail-action-btn dab-compare" onclick="addToCompare('${prop.id}')">⚖ Compare</button>
       </div>
     </div>
 
@@ -639,7 +636,7 @@ function showDetail(id) {
             <div class="contact-btns">
               <button class="contact-btn cb-call" onclick="showToast('Calling ${prop.ownerPhone}...','success')">📞 Call: ${prop.ownerPhone}</button>
               <button class="contact-btn cb-whatsapp" onclick="showToast('Opening WhatsApp...','success')">💬 WhatsApp</button>
-              <button class="contact-btn cb-enquiry" onclick="openEnquiry(${prop.id})">📩 Send Enquiry</button>
+              <button class="contact-btn cb-enquiry" onclick="openEnquiry('${prop.id}')">📩 Send Enquiry</button>
             </div>
           </div>
 
@@ -899,7 +896,7 @@ function showPropertyPicker(slot) {
 
 function renderPickerList(props) {
   document.getElementById('pickerList').innerHTML = props.map(p => `
-    <div class="picker-item" onclick="pickProperty(${p.id})">
+    <div class="picker-item" onclick="pickProperty('${p.id}')">
       <div class="picker-emoji">${p.emoji}</div>
       <div class="picker-info">
         <div class="picker-name">${p.title}</div>
@@ -963,7 +960,7 @@ function renderComparison() {
         </tr>
         <tr>
           <td>Action</td>
-          ${selected.map(p => `<td><button class="btn btn-primary btn-sm" onclick="showDetail(${p.id})">View Details</button></td>`).join('')}
+          ${selected.map(p => `<td><button class="btn btn-primary btn-sm" onclick="showDetail('${p.id}')">View Details</button></td>`).join('')}
         </tr>
       </tbody>
     </table>
@@ -1101,8 +1098,8 @@ function renderAdminTab(tab) {
                 <td style="font-weight:600;color:var(--accent)">${formatPrice(p.price)}</td>
                 <td><span class="status-badge status-active">Active</span></td>
                 <td>
-                  <button class="btn btn-sm" style="background:var(--off-white);border:1px solid var(--border)" onclick="showDetail(${p.id})">View</button>
-                  <button class="btn btn-sm btn-danger" onclick="deleteProperty(${p.id})">Delete</button>
+                  <button class="btn btn-sm" style="background:var(--off-white);border:1px solid var(--border)" onclick="showDetail('${p.id}')">View</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteProperty('${p.id}')">Delete</button>
                 </td>
               </tr>
             `).join('')}
@@ -1164,12 +1161,30 @@ function renderAdminTab(tab) {
   }
 }
 
-function deleteProperty(id) {
+async function deleteProperty(id) {
   if (!confirm('Are you sure you want to delete this property?')) return;
-  const idx = DB.properties.findIndex(p => p.id === id);
-  if (idx !== -1) DB.properties.splice(idx, 1);
-  renderAdminTab('properties');
-  showToast('Property deleted.', 'success');
+  const token = sessionStorage.getItem('nbToken');
+  if (!token) { showToast('Session expired or not logged in.', 'error'); return; }
+
+  try {
+    const res = await fetch(`${API_URL}/properties/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (!data.success) { showToast(data.message, 'error'); return; }
+
+    const idx = DB.properties.findIndex(p => p.id === id);
+    if (idx !== -1) DB.properties.splice(idx, 1);
+    
+    const fIdx = filteredProps.findIndex(p => p.id === id);
+    if (fIdx !== -1) filteredProps.splice(fIdx, 1);
+
+    renderAdminTab('properties');
+    showToast('Property deleted successfully.', 'success');
+  } catch (err) {
+    showToast('Failed to delete property.', 'error');
+  }
 }
 
 // ==============================
@@ -1188,8 +1203,86 @@ function loadProfile() {
   document.getElementById('pEnqCount').textContent = DB.enquiries.filter(e => e.type === 'enquiry').length;
 }
 
-function saveProfile() {
-  showToast('Profile updated successfully! ✓', 'success');
+async function saveProfile() {
+  if (!currentUser) { showToast('Please login to save profile.', 'error'); return; }
+  const token = sessionStorage.getItem('nbToken');
+  if (!token) { showToast('Session expired.', 'error'); return; }
+
+  const fullName = document.getElementById('editName').value.trim();
+  const phone = document.getElementById('editPhone').value.trim();
+  const city = document.getElementById('editCity').value.trim();
+
+  if (!fullName) { showToast('Name is required.', 'error'); return; }
+
+  const nameParts = fullName.split(' ');
+  const first_name = nameParts[0];
+  const last_name = nameParts.slice(1).join(' ') || '.';
+
+  // 1. Update Profile Details
+  try {
+    const res = await fetch(`${API_URL}/auth/me`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ first_name, last_name, phone, city })
+    });
+    const data = await res.json();
+    if (!data.success) { showToast(data.message, 'error'); return; }
+
+    currentUser.firstName = first_name;
+    currentUser.lastName = last_name;
+    currentUser.phone = phone;
+    currentUser.city = city;
+    sessionStorage.setItem('nbUser', JSON.stringify(currentUser));
+    onLogin();
+    loadProfile();
+    showToast('Profile details updated!', 'success');
+  } catch (err) {
+    showToast('Failed to update profile.', 'error');
+    return;
+  }
+
+  // 2. Change Password
+  const currentPass = document.getElementById('currentPass').value;
+  const newPass = document.getElementById('newPass').value;
+  const confirmPass = document.getElementById('confirmPass').value;
+
+  if (currentPass || newPass || confirmPass) {
+    if (!currentPass || !newPass || !confirmPass) {
+      showToast('To change password, fill current, new, and confirm password fields.', 'error');
+      return;
+    }
+    if (newPass !== confirmPass) {
+      showToast('New passwords do not match.', 'error');
+      return;
+    }
+    if (newPass.length < 8) {
+      showToast('New password must be at least 8 characters.', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/auth/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ current_password: currentPass, new_password: newPass })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast(data.message, 'error'); return; }
+
+      document.getElementById('currentPass').value = '';
+      document.getElementById('newPass').value = '';
+      document.getElementById('confirmPass').value = '';
+      showToast('Password changed successfully!', 'success');
+    } catch (err) {
+      showToast('Failed to change password.', 'error');
+    }
+  }
 }
 
 // ==============================

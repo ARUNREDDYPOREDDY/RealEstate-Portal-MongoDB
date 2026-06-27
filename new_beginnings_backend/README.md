@@ -27,7 +27,7 @@ relestate total pgsql/
 ├── new_beginnings_backend/           ← Express.js REST API
 │   ├── config/
 │   │   ├── db.js                     ← MongoDB connection (mongoose)
-│   │   └── seed.js                   ← Seeds all collections with demo data
+│   │   └── seed.js                   ← Seeds all collections with sample data (no demo users by default)
 │   │
 │   ├── controllers/
 │   │   ├── authController.js         ← Register, Login, Profile, Password
@@ -132,8 +132,9 @@ npm run seed
 ```
 
 ✔ Creates all collections
-✔ Inserts demo users  
-✔ Inserts properties + embedded amenities + reviews
+✔ Inserts sample properties + embedded amenities + reviews
+
+Note: The seed script no longer auto-creates demo user accounts. To create users for development, edit `config/seed.js` or add users manually and then run `npm run seed`.
 
 ---
 
@@ -153,11 +154,7 @@ http://localhost:5001
 
 ## 🔑 Demo Credentials
 
-| Role  | Email            | Password |
-|-------|------------------|----------|
-| User  | user@demo.com    | demo123  |
-| Admin | admin@demo.com   | admin123 |
-
+Demo credentials are no longer provided by default. Create admin and user accounts manually or via a controlled seed when needed.
 ---
 
 ## 📡 API Reference
